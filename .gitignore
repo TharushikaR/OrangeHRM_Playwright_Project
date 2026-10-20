@@ -150,7 +150,11 @@ vite.config.ts.timestamp-*
 
 # Playwright
 /test-results/
+/Reports/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+/.github/workflows/playwright.yml/
+
+
