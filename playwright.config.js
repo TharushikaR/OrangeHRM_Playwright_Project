@@ -39,14 +39,17 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL:
       process.env.BASE_URL || "https://opensource-demo.orangehrmlive.com",
-      actionTimeout: 0,
-      navigationTimeout: 30000,
+    actionTimeout: 0,
+    navigationTimeout: 50000,
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "en-US",
     timezoneId: "America/New_York",
+    launchOptions: {
+      args: ["--start-maximized"],
+    },
   },
 
   /* Configure projects for major browsers */
@@ -77,8 +80,8 @@ export default defineConfig({
     // },
 
     {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
+      name: "Microsoft Edge",
+      use: { ...devices["Desktop Edge"], channel: "msedge" },
     },
     // {
     //   name: 'Google Chrome',
