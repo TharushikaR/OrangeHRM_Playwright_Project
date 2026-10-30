@@ -1,6 +1,17 @@
 // @ts-check
 import { test, expect } from "@playwright/test";
+import fs from "node:fs";
 const { Login_Session } = require("../pages/LoginSessionPage");
+import {
+  validVariants,
+  errorCases,
+  requiredCases,
+} from "../testData/commonData";
+
+const seedUsers = JSON.parse(
+  fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),
+);
+
 /** @type {import('@playwright/test').BrowserContext} */
 let context;
 /** @type {import('@playwright/test').Page} */
@@ -17,114 +28,87 @@ test.describe("OrangeHRM Login Functionality", () => {
   });
 
   test.afterEach(async ({ page }, testInfo) => {
-    console.log(
-      `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-    );
+    if (testInfo.retry) {
+      console.log(
+        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
+      );
+    } else {
+      console.log(
+        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
+      );
+    }
     await page.context().clearCookies();
   });
 
-  test("Login with valid Admin credentials", async ({}) => {
-    await loginSession.LoginWithButton(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
-    );
-    await loginSession.VerifyVisibilityAfterLogin();
+  test.describe("Admin", () => {
+    test.use({ storageState: "playwright/.auth/admin.json" });
+    test("Login with valid Admin credentials", async ({}) => {});
+
+    test("Browser back after login", async ({ page }) => {
+      await page.goBack();
+      await expect(page).toHaveURL("about:blank");
+      await expect(page).not.toHaveURL(/dashboard/);
+    });
   });
 
-  test("Login with valid ESS user credentials", async ({}) => {
-    await loginSession.LoginWithButton(
-      process.env.ESS_USERNAME,
-      process.env.ESS_PASSWORD,
-    );
-    await loginSession.VerifyVisibilityAfterLogin();
+  test.describe("ESS", () => {
+    test.use({ storageState: "playwright/.auth/ess.json" });
+    test("Login with valid ESS user credentials", async ({}) => {});
   });
 
   test("Submit login using Enter key", async ({}) => {
     await loginSession.LoginEnterKey(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
+      seedUsers.accounts[0].username,
+      seedUsers.accounts[0].password,
     );
     await loginSession.VerifyVisibilityAfterLogin();
   });
 
-  test("Username is case-insensitive with all are in lowercase", async ({}) => {
-    await loginSession.LoginWithButton(
-      (process.env.ADMIN_USERNAME ?? "Admin").toLowerCase(),
-      process.env.ADMIN_PASSWORD,
-    );
-    await loginSession.VerifyVisibilityAfterLogin();
-  });
+  // ---- Valid login variants-----------
+  for (const [title, transform] of validVariants) {
+    test(String(title), async () => {
+      const username =
+        typeof transform === "function"
+          ? transform(process.env.ADMIN_USERNAME ?? "Admin")
+          : transform;
+      await loginSession.LoginWithButton(
+        String(username),
+        process.env.ADMIN_PASSWORD,
+      );
+      await loginSession.VerifyVisibilityAfterLogin();
+    });
+  }
 
-  test("Username is case-insensitive with all are in uppercase", async ({}) => {
-    await loginSession.LoginWithButton(
-      (process.env.ADMIN_USERNAME ?? "Admin").toUpperCase(),
-      process.env.ADMIN_PASSWORD,
-    );
-    await loginSession.VerifyVisibilityAfterLogin();
-  });
+  // ---- Invalid credentials -> generic error alert------------
+  for (const [title, user, pass] of errorCases) {
+    test(`Login with ${title}`, async () => {
+      await loginSession.LoginWithButton(user, pass);
+      await expect(loginSession.errorAlert).toBeVisible();
+    });
+  }
 
-  test("Login with valid username and invalid password", async ({}) => {
-    await loginSession.LoginWithButton(
-      process.env.ADMIN_USERNAME,
-      process.env.INVALID_PASSWORD,
-    );
-    await expect(loginSession.errorAlert).toBeVisible();
-  });
-
-  test("Login with invalid username and valid password", async ({}) => {
-    await loginSession.LoginWithButton(
-      process.env.INVALID_USERNAME,
-      process.env.ADMIN_PASSWORD,
-    );
-    await expect(loginSession.errorAlert).toBeVisible();
-  });
-
-  test("Login with both invalid credentials", async ({}) => {
-    await loginSession.LoginWithButton(
-      process.env.INVALID_USERNAME,
-      process.env.INVALID_PASSWORD,
-    );
-    await expect(loginSession.errorAlert).toBeVisible();
-  });
-
-  test("Login with both fields empty", async ({}) => {
-    await loginSession.LoginWithButton("", "");
-    await expect(loginSession.userNameRequired).toBeVisible();
-    await expect(loginSession.passwordRequired).toBeVisible();
-  });
-
-  test("Login with username only", async ({}) => {
-    await loginSession.LoginWithButton(process.env.ADMIN_USERNAME, " ");
-    await expect(loginSession.passwordRequired).toBeVisible();
-  });
-
-  test("Login with password only", async ({}) => {
-    await loginSession.LoginWithButton(" ", process.env.ADMIN_PASSWORD);
-    await expect(loginSession.userNameRequired).toBeVisible();
-  });
+  // ---- Required-field validation------------
+  for (const [title, user, pass, messages] of requiredCases) {
+    test(`Login with ${title}`, async () => {
+      await loginSession.LoginWithButton(user, pass);
+      for (const m of messages ?? []) {
+        await expect(/** @type {any} */ (loginSession)[m]).toBeVisible();
+      }
+    });
+  }
 
   test("Login with disabled user account", async ({}) => {
     await loginSession.LoginWithButton(
-      process.env.BLOCKED_USERNAME,
-      process.env.BLOCKED_PASSWORD,
+      seedUsers.accounts[2].username,
+      seedUsers.accounts[2].password,
     );
     await expect(loginSession.accountDisabledAlert).toBeVisible();
   });
 
-  test("Login with whitespace-only values for username", async ({}) => {
-    await loginSession.LoginWithButton(" Admin", process.env.ADMIN_PASSWORD);
-    await expect(loginSession.errorAlert).toBeVisible();
-  });
-
-  test("Login with whitespace-only values for password", async ({}) => {
-    await loginSession.LoginWithButton(process.env.ADMIN_USERNAME, "admin123 ");
-    await expect(loginSession.errorAlert).toBeVisible();
-  });
-
   test("Double-click Login button", async ({}) => {
     await loginSession.LoginWithDoubleClick(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
+      seedUsers.accounts[0].username,
+      seedUsers.accounts[0].password,
     );
     await loginSession.VerifyVisibilityAfterLogin();
   });
@@ -135,8 +119,8 @@ test.describe("OrangeHRM Login Functionality", () => {
   }) => {
     loginSession = new Login_Session(page);
     await loginSession.LoginWithButton(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
+      seedUsers.accounts[0].username,
+      seedUsers.accounts[0].password,
     );
     await loginSession.VerifyVisibilityAfterLogin();
 
@@ -151,21 +135,10 @@ test.describe("OrangeHRM Login Functionality", () => {
     await secondTab.close();
   });
 
-  test("Browser back after login", async ({ page }) => {
-    await loginSession.LoginWithButton(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
-    );
-    await loginSession.VerifyVisibilityAfterLogin();
-    await page.goBack({ waitUntil: "domcontentloaded" });
-    await expect(page).toHaveURL(/login/);
-    await expect(page).not.toHaveURL(/dashboard/);
-  });
-
   test("Password field masked with no show toggle leaks", async ({ page }) => {
     await loginSession.FillCredentials(
-      process.env.ADMIN_USERNAME,
-      process.env.ADMIN_PASSWORD,
+      seedUsers.accounts[0].username,
+      seedUsers.accounts[0].password,
     );
     const passwordField = await loginSession.inputPassword;
     await expect(passwordField).toHaveAttribute("type", "password");

@@ -4,7 +4,7 @@
   "description": "Test Description",
   "main": "index.js",
   "scripts": {
-    "test": "npx playwright test",
+    "test": "npx playwright test --max-failures=0",
     "test:headed": "npx playwright test --headed",
     "test:report": "npx playwright show-report"
   },
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/TharushikaR/OrangeHRM_Playwright_Project#readme",
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "dotenv": "^18.0.8"

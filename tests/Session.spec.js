@@ -1,6 +1,11 @@
 // @ts-check
 import { test, expect } from "@playwright/test";
+import fs from "node:fs";
 const { Login_Session } = require("../pages/LoginSessionPage");
+const seedUsers = JSON.parse(
+  fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),
+);
+
 /** @type {import('@playwright/test').BrowserContext} */
 let context;
 /** @type {import('@playwright/test').Page} */
@@ -17,9 +22,15 @@ test.describe("OrangeHRM Session Management", () => {
   });
 
   test.afterEach(async ({ page }, testInfo) => {
-    console.log(
-      `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-    );
+    if (testInfo.retry) {
+      console.log(
+        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
+      );
+    } else {
+      console.log(
+        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
+      );
+    }
     await page.context().clearCookies();
   });
 
@@ -28,10 +39,7 @@ test.describe("OrangeHRM Session Management", () => {
     await expect(page).toHaveURL(/auth\/login/);
   });
 
-  test("Logout in one tab, action in another", async ({
-    page,
-    context,
-  }) => {
+  test("Logout in one tab, action in another", async ({ page, context }) => {
     const page2 = await context.newPage();
 
     const loginSession1 = new Login_Session(page);
@@ -46,12 +54,12 @@ test.describe("OrangeHRM Session Management", () => {
 
     await Promise.all([
       loginSession1.LoginWithButton(
-        process.env.ADMIN_USERNAME,
-        process.env.ADMIN_PASSWORD,
+        seedUsers.accounts[0].username,
+        seedUsers.accounts[0].password,
       ),
       loginSession2.LoginWithButton(
-        process.env.ADMIN_USERNAME,
-        process.env.ADMIN_PASSWORD,
+        seedUsers.accounts[0].username,
+        seedUsers.accounts[0].password,
       ),
     ]);
 
