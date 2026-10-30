@@ -3,6 +3,7 @@ import { test as setup, expect } from "@playwright/test";
 import { faker } from "@faker-js/faker";
 import fs from "node:fs";
 import path from "node:path";
+import { writeRegistry } from "../../utils/seed-registry";
 
 const { Login_Session } = require("../../pages/LoginSessionPage");
 
@@ -11,12 +12,12 @@ const T = 60_000;
 const opts = { timeout: T };
 const commonPassword = "admin123";
 
-// One place for the timeout instead of { timeout: 60000 } on every call
+// Timeout setup
 setup.use({ actionTimeout: T, navigationTimeout: T });
 setup.setTimeout(5 * T);
 
-setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
-  // Fail fast: validate the env values the test really depends on
+setup("Seed: Creating a New Employee and Three User Accounts", async ({ page }) => {
+  // validate the env values the test really depends on
   const adminUsername = process.env.ADMIN_USERNAME;
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminUsername || !adminPassword) {
@@ -30,14 +31,19 @@ setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
   };
   const escapedName = `${employee.firstName} ${employee.lastName}`.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-  // Roles/status are assumptions - adjust as needed
+  // Account details
   const accounts = [
     { username: `AUTH_USERNAME_${employee.firstName}`, password: commonPassword, role: "Admin", status: "Enabled" },
     { username: `ESS_USERNAME_${employee.firstName}`, password: commonPassword, role: "ESS", status: "Enabled" },
     { username: `BLOCKED_USERNAME_${employee.firstName}`, password: commonPassword, role: "ESS", status: "Disabled" },
   ];
 
-  // Locators defined once
+  // start a fresh cleanup registry (overwrites leftovers from any previous run)
+  /** @type {{ employeeName: string, empNumber: number | null, userIds: number[] }} */
+  const registry = { employeeName: `${employee.firstName} ${employee.lastName}`, empNumber: null, userIds: [] }; 
+  writeRegistry(registry); 
+
+  // Locators
   const addButton = page.locator(".orangehrm-paper-container > .orangehrm-header-container > button");
   /** @param {string} name */
   const heading = (name) => page.getByRole("heading", { name, exact: true });
@@ -54,7 +60,7 @@ setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
     await page.getByRole("listbox").getByRole("option", { name: value, exact: true }).click();
   };
 
-  // 1. Login as the existing admin
+  // 1. Login as admin
   const loginSession = new Login_Session(page);
   await page.goto("/web/index.php/auth/login", { waitUntil: "domcontentloaded" });
   await loginSession.LoginWithButton(adminUsername, adminPassword);
@@ -70,8 +76,10 @@ setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
   await page.getByPlaceholder("Last Name").fill(employee.lastName);
   await saveButton.click();
   // Wait for the real success signal (redirect to the new employee's page)
-  // instead of blanket waitForLoadState calls. Verify this URL pattern in your app.
+  // instead of blanket waitForLoadState calls. 
   await page.waitForURL("**/pim/viewPersonalDetails/**", opts);
+  registry.empNumber = Number(page.url().match(/empNumber\/(\d+)/)?.[1]); 
+  writeRegistry(registry); 
 
   // 3. Create the user accounts
   await page.getByRole("link", { name: "Admin" }).click();
@@ -91,7 +99,13 @@ setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
     const passwords = page.locator('input[type="password"]');
     await passwords.first().fill(acc.password);
     await passwords.last().fill(acc.password);
-    await saveButton.click();
+
+    // capture the created user's id from the API response while saving
+    const [createResponse] = await Promise.all([ 
+      page.waitForResponse((r) => r.url().includes("/api/v2/admin/users") && r.request().method() === "POST",opts,),saveButton.click(),
+    ]);
+    registry.userIds.push((await createResponse.json()).data.id); 
+    writeRegistry(registry);
 
     // Save redirects back to the list: that is the success signal
     await expect(heading("System Users")).toBeVisible(opts);
@@ -102,24 +116,14 @@ setup("Seed: Creating new employee and 3 user accounts", async ({ page }) => {
   await employeeHint.fill(employee.firstName);
   await suggestion.click();
   await page.getByRole("button", { name: "Search", exact: true }).click();
-  await expect(page.locator("span.oxd-text--span", { hasText: "Records Found" })).toHaveText(
-    /\(3\) Records Found/,
-    opts,
-  );
+  await expect(page.locator("span.oxd-text--span", { hasText: "Records Found" })).toHaveText(/\(3\) Records Found/,opts,);
 
   // 5. Write the seed file only after everything succeeded
   fs.mkdirSync(path.dirname(seedUsersPath), { recursive: true });
-  fs.writeFileSync(
-    seedUsersPath,
+  fs.writeFileSync(seedUsersPath,
     JSON.stringify(
-      {
-        admin: accounts.find((a) => a.role === "Admin")?.username,
+      { admin: accounts.find((a) => a.role === "Admin")?.username,
         ess: accounts.find((a) => a.role === "ESS" && a.status === "Enabled")?.username,
         accounts,
-      },
-      null,
-      2,
-    ),
-    "utf-8",
-  );
+      },null,2,),"utf-8",);
 });

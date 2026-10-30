@@ -5,39 +5,22 @@ class Login_Session {
   /** @param {string} placeholder */
   constructor(page) {
     this.page = page;
-    this.loginHeading = page.getByRole("heading", {
-      name: "Login",
-      exact: true,
-    });
+    this.loginHeading = page.getByRole("heading", {name: "Login",exact: true,});
     this.inputUsername = page.locator('input[name="username"]');
     this.inputPassword = page.locator('input[name="password"]');
     this.btnLogin = page.locator('button[type="submit"]');
     this.btnCancel = page.getByRole("button", { name: "Cancel" });
     this.brandBanner = page.getByAltText("client brand banner");
-    this.errorAlert = page
-      .locator(".oxd-alert-content--error")
-      .getByText("Invalid credentials");
-    this.userNameRequired = page
-      .locator(".oxd-input-field-error-message")
-      .first();
-    this.passwordRequired = page
-      .locator(".oxd-input-field-error-message")
-      .last();
-    this.accountDisabledAlert = page.locator(".oxd-alert-content-text", {
-      hasText: "Account disabled",
-    });
+    this.errorAlert = page.locator(".oxd-alert-content--error").getByText("Invalid credentials");
+    this.userNameRequired = page.locator(".oxd-input-field-error-message").first();
+    this.passwordRequired = page.locator(".oxd-input-field-error-message").last();
+    this.accountDisabledAlert = page.locator(".oxd-alert-content-text", {hasText: "Account disabled",});
     this.userDropdownIcon = page.locator(".oxd-userdropdown-icon");
     this.logoutButton = page.getByRole("menuitem", { name: "Logout" });
     this.forgotPasswordLink = page.getByText("Forgot your password?");
-    this.resetPasswordHeading = page.getByRole("heading", {
-      name: "Reset Password",
-    });
-    this.resetPasswordButton = page.getByRole("button", {
-      name: "Reset Password",
-    });
-    this.resetPasswordSuccessMessage = page.getByRole("heading", {
-      name: "Reset Password link sent successfully",
-    });
+    this.resetPasswordHeading = page.getByRole("heading", {name: "Reset Password",});
+    this.resetPasswordButton = page.getByRole("button", {name: "Reset Password",});
+    this.resetPasswordSuccessMessage = page.getByRole("heading", {name: "Reset Password link sent successfully",});
     this.adminLink = page.getByRole("link", { name: "Admin" });
   }
 

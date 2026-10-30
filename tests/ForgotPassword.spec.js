@@ -1,6 +1,7 @@
 // @ts-check
 import { test as base, expect } from "@playwright/test";
 import { Login_Session } from "../pages/LoginSessionPage";
+const RESET_URL = /requestPasswordResetCode/;
 
 /**
  * @typedef {{ loginSession: Login_Session }} MyFixtures
@@ -10,31 +11,23 @@ import { Login_Session } from "../pages/LoginSessionPage";
 const test = base.extend({
   loginSession: async ({ page }, use) => {
     const loginSession = new Login_Session(page);
-    await page.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
     await use(loginSession);
   },
 });
 
-const RESET_URL = /requestPasswordResetCode/;
-
 test.describe("OrangeHRM - Navigation to Forgot Password page", () => {
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.retry) {
-      console.log(
-        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
-      );
+      console.log(`Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,);
     } else {
-      console.log(
-        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-      );
+      console.log(`Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,);
     }
     await page.context().clearCookies();
   });
 
   test("Navigate to Forgot Password page", async ({ page, loginSession }) => {
-    await loginSession.forgotPasswordLink.click(); // click auto-waits for visibility
+    await loginSession.forgotPasswordLink.click(); 
     await expect(page).toHaveURL(RESET_URL);
     await expect(loginSession.resetPasswordHeading).toBeVisible();
   });

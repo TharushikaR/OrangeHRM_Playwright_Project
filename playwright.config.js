@@ -10,7 +10,7 @@ const timeStamp = `${timeNow.getFullYear()}_${timePad(timeNow.getMonth() + 1)}_$
 export default defineConfig({
   testDir: "./tests",
   outputDir: "./test-results",
-  maxFailures:0,
+  maxFailures: 0,
   timeout: 60 * 1000,
   expect: {
     timeout: 70000,
@@ -61,11 +61,11 @@ export default defineConfig({
     //   dependencies: ["setup"],
     // },
 
-    {
-      name: "Firefox",
-      use: { ...devices["Desktop Firefox"] },
-      dependencies: ["setup"],
-    },
+    // {
+    //   name: "Firefox",
+    //   use: { ...devices["Desktop Firefox"] },
+    //   dependencies: ["setup"],
+    // },
 
     // {
     //   name: "webkit",
@@ -86,11 +86,21 @@ export default defineConfig({
       testDir: "./tests/auth",
       testMatch: /seed-users\.setup\.js/,
     },
-    { name: "setup",
+    {
+      name: "setup",
       testDir: "./tests/auth",
       testMatch: /auth\.setup\.js/,
       dependencies: ["seed"], // runs only after seed passes
-     },
+      teardown: "delete",
+    },
+    // {
+    //   name: "cleanup",
+    //   testMatch: /cleanup\.teardown\.js/,
+    // },
+    {
+      name: "delete",
+      testMatch: /delete\.teardown\.js/,
+    },
     {
       name: "Microsoft Edge",
       use: {
@@ -100,11 +110,11 @@ export default defineConfig({
       },
       dependencies: ["setup"],
     },
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-       dependencies: ["setup"],
-    },
+    // {
+    //   name: "Google Chrome",
+    //   use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    //   dependencies: ["setup"],
+    // },
   ],
 
   /* Run your local dev server before starting the tests */

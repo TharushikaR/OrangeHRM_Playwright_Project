@@ -6,9 +6,7 @@ const { Login_Session } = require("../../pages/LoginSessionPage");
 const authFileAdmin = "playwright/.auth/admin.json";
 const authFileEss = "playwright/.auth/ess.json";
 
-const seedUsers = JSON.parse(
-  fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),
-);
+const seedUsers = JSON.parse(fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),);
 
 const users = [
   {
@@ -33,9 +31,7 @@ for (const u of users) {
     
     const loginSession = new Login_Session(page);
 
-    await page.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
     await loginSession.LoginWithButton(u.username, u.password);
     await loginSession.VerifyVisibilityAfterLogin();
 

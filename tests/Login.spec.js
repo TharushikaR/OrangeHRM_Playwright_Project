@@ -2,40 +2,28 @@
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 const { Login_Session } = require("../pages/LoginSessionPage");
-import {
-  validVariants,
-  errorCases,
-  requiredCases,
-} from "../testData/commonData";
+import { validVariants,errorCases,requiredCases,} from "../testData/commonData";
 
-const seedUsers = JSON.parse(
-  fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),
-);
+const seedUsers = JSON.parse(fs.readFileSync("playwright/.auth/seed-users.json", "utf-8"),);
 
-/** @type {import('@playwright/test').BrowserContext} */
-let context;
-/** @type {import('@playwright/test').Page} */
-let page;
+// /** @type {import('@playwright/test').BrowserContext} */
+// let context;
+// /** @type {import('@playwright/test').Page} */
+// let page;
 /** @type {Login_Session} */
 let loginSession;
 
 test.describe("OrangeHRM Login Functionality", () => {
   test.beforeEach(async ({ page }) => {
     loginSession = new Login_Session(page);
-    await page.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
   });
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.retry) {
-      console.log(
-        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
-      );
+      console.log(`Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,);
     } else {
-      console.log(
-        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-      );
+      console.log(`Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,);
     }
     await page.context().clearCookies();
   });
@@ -57,10 +45,7 @@ test.describe("OrangeHRM Login Functionality", () => {
   });
 
   test("Submit login using Enter key", async ({}) => {
-    await loginSession.LoginEnterKey(
-      seedUsers.accounts[0].username,
-      seedUsers.accounts[0].password,
-    );
+    await loginSession.LoginEnterKey(seedUsers.accounts[0].username,seedUsers.accounts[0].password,);
     await loginSession.VerifyVisibilityAfterLogin();
   });
 
@@ -71,10 +56,7 @@ test.describe("OrangeHRM Login Functionality", () => {
         typeof transform === "function"
           ? transform(process.env.ADMIN_USERNAME ?? "Admin")
           : transform;
-      await loginSession.LoginWithButton(
-        String(username),
-        process.env.ADMIN_PASSWORD,
-      );
+      await loginSession.LoginWithButton(String(username),process.env.ADMIN_PASSWORD,);
       await loginSession.VerifyVisibilityAfterLogin();
     });
   }
@@ -98,36 +80,22 @@ test.describe("OrangeHRM Login Functionality", () => {
   }
 
   test("Login with disabled user account", async ({}) => {
-    await loginSession.LoginWithButton(
-      seedUsers.accounts[2].username,
-      seedUsers.accounts[2].password,
-    );
+    await loginSession.LoginWithButton(seedUsers.accounts[2].username,seedUsers.accounts[2].password,);
     await expect(loginSession.accountDisabledAlert).toBeVisible();
   });
 
   test("Double-click Login button", async ({}) => {
-    await loginSession.LoginWithDoubleClick(
-      seedUsers.accounts[0].username,
-      seedUsers.accounts[0].password,
-    );
+    await loginSession.LoginWithDoubleClick(seedUsers.accounts[0].username,seedUsers.accounts[0].password,);
     await loginSession.VerifyVisibilityAfterLogin();
   });
 
-  test("Login while already logged in (second tab)", async ({
-    page,
-    context,
-  }) => {
+  test("Login while already logged in (second tab)", async ({page,context,}) => {
     loginSession = new Login_Session(page);
-    await loginSession.LoginWithButton(
-      seedUsers.accounts[0].username,
-      seedUsers.accounts[0].password,
-    );
+    await loginSession.LoginWithButton(seedUsers.accounts[0].username,seedUsers.accounts[0].password,);
     await loginSession.VerifyVisibilityAfterLogin();
 
     const secondTab = await context.newPage();
-    await secondTab.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await secondTab.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
 
     await expect(secondTab).toHaveURL(/dashboard/);
     await expect(secondTab).not.toHaveURL(/login/);
@@ -135,21 +103,12 @@ test.describe("OrangeHRM Login Functionality", () => {
     await secondTab.close();
   });
 
-  test("Password field masked with no show toggle leaks", async ({ page }) => {
-    await loginSession.FillCredentials(
-      seedUsers.accounts[0].username,
-      seedUsers.accounts[0].password,
-    );
+  test("Password field masked with no show toggle leaks", async ({}) => {
+    await loginSession.FillCredentials(seedUsers.accounts[0].username,seedUsers.accounts[0].password,);
     const passwordField = await loginSession.inputPassword;
     await expect(passwordField).toHaveAttribute("type", "password");
-    const fieldGroup = passwordField.locator(
-      "xpath=ancestor::div[contains(@class,'oxd-input-group')][1]",
-    );
-    await expect(
-      fieldGroup.locator(
-        "button, [role='button'], [class*='eye'], [class*='toggle']",
-      ),
-    ).toHaveCount(0);
+    const fieldGroup = passwordField.locator("xpath=ancestor::div[contains(@class,'oxd-input-group')][1]",);
+    await expect(fieldGroup.locator("button, [role='button'], [class*='eye'], [class*='toggle']",),).toHaveCount(0);
   });
 
   test("Tab order and focus", async ({ page }) => {
@@ -169,14 +128,8 @@ test.describe("OrangeHRM Login Functionality", () => {
     // Let the CSS transition finish
     await page.waitForTimeout(300);
 
-    const passwordFocusStyles =
-      await loginSession.getFocusStyles(passwordField);
-    expect(
-      await loginSession.hasFocusIndicator(
-        passwordBlurStyles,
-        passwordFocusStyles,
-      ),
-    ).toBe(true);
+    const passwordFocusStyles = await loginSession.getFocusStyles(passwordField);
+    expect(await loginSession.hasFocusIndicator(passwordBlurStyles,passwordFocusStyles,),).toBe(true);
 
     // Same pattern for the login button
     const loginBlurStyles = await loginSession.getFocusStyles(loginButton);
@@ -184,8 +137,6 @@ test.describe("OrangeHRM Login Functionality", () => {
     await expect(loginButton).toBeFocused();
     await page.waitForTimeout(300);
     const loginFocusStyles = await loginSession.getFocusStyles(loginButton);
-    expect(
-      await loginSession.hasFocusIndicator(loginBlurStyles, loginFocusStyles),
-    ).toBe(true);
+    expect(await loginSession.hasFocusIndicator(loginBlurStyles, loginFocusStyles),).toBe(true);
   });
 });

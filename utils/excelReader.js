@@ -24,9 +24,7 @@ export function readDataFromExcel(filePath, header, sheet = 0) {
 
   const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-  return rows
-    .map((row) => String(row[header] ?? "").trim())
-    .filter((value) => value !== ""); // skip blank rows
+  return rows.map((row) => String(row[header] ?? "").trim()).filter((value) => value !== ""); // skip blank rows
 }
 
 module.exports = { readDataFromExcel };

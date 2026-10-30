@@ -1,10 +1,11 @@
 // @ts-check
 import { test, expect } from "@playwright/test";
 const { Login_Session } = require("../pages/LoginSessionPage");
-/** @type {import('@playwright/test').BrowserContext} */
-let context;
-/** @type {import('@playwright/test').Page} */
-let page;
+
+// /** @type {import('@playwright/test').BrowserContext} */
+// let context;
+// /** @type {import('@playwright/test').Page} */
+// let page;
 /** @type {Login_Session} */
 let loginSession;
 
@@ -12,20 +13,14 @@ test.describe("OrangeHRM Logout Functionality", () => {
   test.use({ storageState: "playwright/.auth/admin.json" });
   test.beforeEach(async ({ page }) => {
     loginSession = new Login_Session(page);
-    await page.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
   });
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.retry) {
-      console.log(
-        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
-      );
+      console.log(`Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,);
     } else {
-      console.log(
-        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-      );
+      console.log(`Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,);
     }
     await page.context().clearCookies();
   });

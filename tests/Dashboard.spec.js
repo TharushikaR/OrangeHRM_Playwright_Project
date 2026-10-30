@@ -1,27 +1,18 @@
 // @ts-check
 import { test } from "@playwright/test";
 const { readDataFromExcel } = require("../utils/excelReader");
-
 const { Login_Session } = require("../pages/LoginSessionPage");
 const { Dashboard } = require("../pages/DashBoardPg");
 const widgets = readDataFromExcel("testData/TestData.xlsx", "Widget", 0); // First sheet
-const quickLaunchs = readDataFromExcel(
-  "testData/TestData.xlsx",
-  "Quick Launch",
-  1,
-); // second sheet
+const quickLaunchs = readDataFromExcel("testData/TestData.xlsx","Quick Launch",1,); // second sheet
 const qlURL = readDataFromExcel("testData/TestData.xlsx", "UrlPart", 2);
 const menuItems = readDataFromExcel("testData/TestData.xlsx", "Menu Items", 3);
+const QLNavigation = quickLaunchs.map((Name, i) => ({Name,UrlPart: qlURL[i],}));
 
-const QLNavigation = quickLaunchs.map((Name, i) => ({
-  Name,
-  UrlPart: qlURL[i],
-}));
-
-/** @type {import('@playwright/test').BrowserContext} */
-let context;
-/** @type {import('@playwright/test').Page} */
-let page;
+// /** @type {import('@playwright/test').BrowserContext} */
+// let context;
+// /** @type {import('@playwright/test').Page} */
+// let page;
 /** @type {Dashboard} */
 let dashboard;
 /** @type {Login_Session} */
@@ -32,20 +23,14 @@ test.describe("OrangeHRM Dashboard Functionality", () => {
   test.beforeEach(async ({ page }) => {
     dashboard = new Dashboard(page);
     loginSession = new Login_Session(page);
-    await page.goto("/web/index.php/auth/login", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/web/index.php/auth/login", {waitUntil: "domcontentloaded",});
   });
 
   test.afterEach(async ({ page }, testInfo) => {
     if (testInfo.retry) {
-      console.log(
-        `Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,
-      );
+      console.log(`Retry attempt: ${testInfo.retry} -> ${testInfo.title} -> ${testInfo.project.name}`,);
     } else {
-      console.log(
-        `Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,
-      );
+      console.log(`Finished: ${testInfo.title} -> ${testInfo.status} -> ${testInfo.project.name}`,);
     }
     await page.context().clearCookies();
   });
